@@ -202,8 +202,168 @@ FROM products P
 INNER JOIN Suppliers S ON P.Supplier_ID = S.Supplier_ID
 ORDER BY P.Product_ID;
 
+-- 19. Orders and the Shipper that was used
+-- We’d like to show a list of the Orders that were made,
+-- including the Shipper that was used. Show the OrderID,
+-- OrderDate (date only), and CompanyName of the
+-- Shipper, and sort by OrderID.
+-- In order to not show all the orders (there’s more than
+-- 800), show only those rows with an OrderID of less than
+-- 10300.
+
+SELECT O.Order_ID, O.Order_Date, S.Company_Name
+FROM Orders O
+INNER JOIN Shippers S ON O.Ship_via = S.Shipper_ID
+WHERE O.Order_ID < 10300
+ORDER BY O.Order_ID;
 
 
+______________________________INTERMEDIATE_PROBLEMS_______________________
+
+-- 20. Categories, and the total products in each category
+-- For this problem, we’d like to see the total number of
+-- products in each category. Sort the results by the total
+-- number of products, in descending order.
+
+
+SELECT C.Category_ID, C.Category_Name, COUNT(P.Product_Name) as total
+FROM Products P
+INNER JOIN Categories C ON P.Category_ID = C.Category_ID
+GROUP BY C.Category_ID
+ORDER BY total DESC;
+
+
+
+-- 21. Total customers per country/city
+-- In the Customers table, show the total number of
+-- customers per Country and City.
+
+SELECT Country, City, COUNT(Customer_ID)
+FROM Customers
+GROUP BY Country, City
+ORDER BY Country;
+
+
+-- 22. Products that need reordering
+-- What products do we have in our inventory that should be
+-- reordered? For now, just use the fields UnitsInStock and
+-- ReorderLevel, where UnitsInStock is less than the
+-- ReorderLevel, ignoring the fields UnitsOnOrder and Discontinued.
+-- Order the results by ProductID.
+
+SELECT Product_ID, Product_Name, Units_in_Stock, Reorder_Level
+FROM products
+WHERE Units_In_Stock < Reorder_Level
+ORDER BY Product_ID;
+
+
+-- 23. Products that need reordering, continued
+-- Now we need to incorporate these fields—UnitsInStock,
+-- UnitsOnOrder, ReorderLevel, Discontinued—into our
+-- calculation. We’ll define “products that need reordering”
+-- with the following:
+-- UnitsInStock plus UnitsOnOrder are less than or
+-- equal to ReorderLevel
+-- The Discontinued flag is false (0).
+
+
+SELECT Product_ID, Product_Name, Units_in_Stock, Units_on_Order, Reorder_Level, Discontinued
+FROM products
+WHERE (Units_In_Stock + Units_on_Order) <= Reorder_Level AND Discontinued = 0
+ORDER BY Product_ID;
+
+-- 24. Customer list by region
+-- A salesperson for Northwind is going on a business trip
+-- to visit customers, and would like to see a list of all
+-- customers, sorted by region, alphabetically.
+-- However, he wants the customers with no region (null in
+-- the Region field) to be at the end, instead of at the top,
+-- where you’d normally find the null values. Within the
+-- same region, companies should be sorted by CustomerID.
+
+SELECT *
+FROM Customers
+ORDER BY Region, Customer_ID, Region NULLS LAST;
+
+
+-- 25. High freight charges
+-- Some of the countries we ship to have very high freight
+-- charges. We'd like to investigate some more shipping
+-- options for our customers, to be able to offer them lower
+-- freight charges. Return the three ship countries with the
+-- highest average freight overall, in descending order by
+-- average freight.
+
+SELECT Ship_Country, AVG(freight) as freight_avg
+FROM Orders
+GROUP BY Ship_Country
+ORDER BY freight_avg DESC
+LIMIT 3;
+
+
+-- 26. High freight charges - 2015 (1996)
+-- We're continuing on the question above on high freight
+-- charges. Now, instead of using all the orders we have, we
+-- only want to see orders from the year 2015.
+
+--I'm using 3 ways to some the same problem.
+
+SELECT Ship_Country, AVG(freight) as freight_avg
+FROM Orders
+WHERE Order_Date BETWEEN '1997-01-01' AND '1997-12-31'
+GROUP BY Ship_Country
+ORDER BY freight_avg DESC
+LIMIT 3;
+
+
+SELECT Ship_Country, AVG(freight) as freight_avg
+FROM Orders
+WHERE EXTRACT(YEAR FROM Order_Date) = '1997'
+GROUP BY Ship_Country
+ORDER BY freight_avg DESC
+LIMIT 3;
+
+SELECT Ship_Country, AVG(freight) as freight_avg
+FROM Orders
+WHERE DATE_PART('YEAR', Order_Date) = '1997'
+GROUP BY Ship_Country
+ORDER BY freight_avg DESC
+LIMIT 3;
+
+
+-- 27. High freight charges with between
+-- Another (incorrect) answer to the problem above is this:
+-- Select Top 3
+-- ShipCountry ,AverageFreight = avg(freight) From Orders Where OrderDate
+-- between '1/1/2015' and '12/31/2015'
+-- Group By ShipCountry Order By AverageFreight desc; 
+-- Notice when you run
+-- this, it gives Sweden as the ShipCountry with the third highest freight charges.
+-- However, this is wrong - it should be France.
+-- What is the OrderID of the order that the (incorrect)
+-- answer above is missing?
+
+
+-------------This Question can't be applye in this database
+
+-- 28. High freight charges - last year
+-- We're continuing to work on high freight charges. We
+-- now want to get the three ship countries with the highest
+-- average freight charges. But instead of filtering for a
+-- particular year, we want to use the last 12 months of
+-- order data, using as the end date the last OrderDate in
+-- Orders.
+
+
+SELECT Ship_Country, AVG(freight)::numeric(10,2) as freight_avg
+FROM Orders
+WHERE Order_Date BETWEEN 
+(SELECT MAX(Order_Date) - INTERVAL '1 years' FROM Orders) 
+AND
+(SELECT MAX(Order_Date) FROM Orders)
+GROUP BY Ship_Country
+ORDER BY freight_avg DESC
+LIMIT 3;
 
 
 
